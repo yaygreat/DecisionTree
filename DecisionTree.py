@@ -98,6 +98,9 @@ def gini(rows):
     https://en.wikipedia.org/wiki/Decision_tree_learning#Gini_impurity
     """
     counts = class_counts(rows)
+    "TEST"
+    """print("counts: " + str(counts))"""
+
     impurity = 1
     for lbl in counts:
         prob_of_lbl = counts[lbl] / float(len(rows))
@@ -106,11 +109,19 @@ def gini(rows):
 
 ## TODO: Step 3
 def entropy(rows):
+    "CODE FOR PART 3"
+    counts = class_counts(rows)
 
-    return 0
+    entropy = 0
+    for lbl in counts:
+        entropy += -counts[lbl] / float(len(rows)) * math.log(counts[lbl] / float(len(rows)),2)
+    "END"
+    "TEST"
+    "print(entropy)"
+    return entropy
 
 
-def info_gain(left, right, current_uncertainty):
+def info_gain(left, right, current_entropy):
     """Information Gain.
 
     The uncertainty of the starting node, minus the weighted impurity of
@@ -119,7 +130,7 @@ def info_gain(left, right, current_uncertainty):
     p = float(len(left)) / (len(left) + len(right))
 
     ## TODO: Step 3, Use Entropy in place of Gini
-    return current_uncertainty - p * gini(left) - (1 - p) * gini(right)
+    return current_entropy - p * entropy(left) - (1 - p) * entropy(right)
 
 
 def find_best_split(rows, header):
@@ -127,7 +138,7 @@ def find_best_split(rows, header):
     and calculating the information gain."""
     best_gain = 0  # keep track of the best information gain
     best_question = None  # keep train of the feature / value that produced it
-    current_uncertainty = gini(rows)
+    current_entropy = entropy(rows)
     n_features = len(rows[0]) - 1  # number of columns
 
     for col in range(n_features):  # for each feature
@@ -147,7 +158,7 @@ def find_best_split(rows, header):
                 continue
 
             # Calculate the information gain from this split
-            gain = info_gain(true_rows, false_rows, current_uncertainty)
+            gain = info_gain(true_rows, false_rows, current_entropy)
 
             # You actually can use '>' instead of '>=' here
             # but I wanted the tree to look a certain way for our
@@ -167,6 +178,23 @@ class Leaf:
 
     def __init__(self, rows, id, depth):
         self.predictions = class_counts(rows)
+
+        "TEST"
+        "print(self.predictions.keys(), self.predictions.values())"
+
+        "CODE FOR PART 2"
+        majorityVal = 0
+        for key in self.predictions:
+            if self.predictions[key] > majorityVal:
+                majorityVal = self.predictions[key]
+                majority = key
+        "self.label = next(iter(self.predictions))"
+        self.label = majority
+        "TEST"
+        "print(self.label)"
+        self.id = id
+        self.depth = depth
+        "END"
 
 
 ## TODO: Step 1
@@ -188,7 +216,11 @@ class Decision_Node:
         self.true_branch = true_branch
         self.false_branch = false_branch
 
-
+        "CODE FOR PART 1"
+        self.depth = depth
+        self.id = id
+        self.rows = rows
+        "END"
 
 
 ## TODO: Step 3
@@ -260,7 +292,10 @@ def classify(row, node):
 
     # Base case: we've reached a leaf
     if isinstance(node, Leaf):
-        return node.predictions
+        "return node.predictions"
+        "CODE FOR PART 7"
+        return node.label
+        "END"
 
     # Decide whether to follow the true-branch or the false-branch.
     # Compare the feature / value stored in the node,
@@ -277,9 +312,13 @@ def print_tree(node, spacing=""):
     # Base case: we've reached a leaf
     if isinstance(node, Leaf):
         print (spacing + "Predict", node.predictions)
+        print (spacing + "Label", node.label)
         return
 
     # Print the question at this node
+    "CODE FOR PART 5"
+    print (spacing + "Depth: " + str(node.depth) + " Node ID: " + str(node.id))
+    "END"
     print (spacing + str(node.question))
 
     # Call this function recursively on the true branch
@@ -307,6 +346,15 @@ def getLeafNodes(node, leafNodes =[]):
 
     # Returns a list of all leaf nodes of a tree
 
+    "CODE FOR PART 6"
+    # Base case: we've reached a leaf
+    if isinstance(node, Leaf):
+        leafNodes.append(node)
+        return leafNodes
+
+    leafNodes = getLeafNodes(node.true_branch, leafNodes)
+    leafNodes = getLeafNodes(node.false_branch, leafNodes)
+    "END"
 
     return leafNodes
 
@@ -315,13 +363,42 @@ def getInnerNodes(node, innerNodes =[]):
 
     # Returns a list of all non-leaf nodes of a tree
 
+    "CODE FOR PART 6"
+    # Base case: we've reached a leaf
+    if isinstance(node, Leaf):
+        return innerNodes
+
+    if isinstance(node, Decision_Node):
+        innerNodes.append(node)
+
+    innerNodes = getInnerNodes(node.true_branch, innerNodes)
+    innerNodes = getInnerNodes(node.false_branch, innerNodes)
+    "END"
 
     return innerNodes
 
+"PRUNE FOR PART 9"
+def nodesToPrune(node, pruneNodes =[]):
+    if isinstance(node, Leaf):
+        return pruneNodes
+    if isinstance(node.true_branch, Leaf) & isinstance(node.false_branch, Leaf):
+        if node.true_branch.predictions[node.true_branch.label] != node.false_branch.predictions[node.false_branch.label]:
+            pruneNodes.append(node.id)
+        return pruneNodes
+
+    pruneNodes = nodesToPrune(node.true_branch, pruneNodes)
+    pruneNodes = nodesToPrune(node.false_branch, pruneNodes)
+    return pruneNodes
+"END"
 
 ## TODO: Step 6
 def computeAccuracy(rows, node):
 
+    totalRows = len(rows)
+    numAccurate = 0
+    for row in rows:
+        true_label = row[-1]
+        if label == true_label:
+            numAccurate = numAccurate + 1
 
-    return 0
-
+    return round(numAccurate/totalRows,2)
